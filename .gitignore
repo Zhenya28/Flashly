@@ -1,0 +1,20 @@
+# AI agents
+.agent/
+.agents/
+.gemini/
+.claude/
+
+# IDE
+.cursor/
+.vscode/
+
+# OS
+.DS_Store
+
+# Mobile specific
+flashly-mobile/node_modules/
+flashly-mobile/.expo/
+flashly-mobile/android/
+flashly-mobile/ios/
+
+# Keep empty folders if needed

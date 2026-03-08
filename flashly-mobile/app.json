@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "Flashly",
+    "slug": "flashly-mobile",
+    "scheme": "flashly",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F5F2ED"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.flashly.mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.flashly.mobile",
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "./plugins/withRemoveiOSNotificationEntitlement.js",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Flashly potrzebuje dostępu do galerii, aby importować zdjęcia notatek.",
+          "cameraPermission": "Flashly potrzebuje dostępu do aparatu, aby fotografować notatki."
+        }
+      ],
+      "expo-notifications",
+      "expo-font",
+      "expo-secure-store"
+    ]
+  }
+}

@@ -1,0 +1,28 @@
+import React from 'react';
+import Svg, { Path, G } from 'react-native-svg';
+import { ViewStyle } from 'react-native';
+
+interface SvgProps {
+  width?: number;
+  height?: number;
+  style?: ViewStyle;
+}
+
+export default function EmptyNote({ width = 200, height = 200, style }: SvgProps) {
+  return (
+    <Svg width={width} height={height} viewBox="0 0 1024 1024" style={style}>
+        <G transform="translate(690,270)">
+            <Path d="m0 0h8l3 4v369l-24 26-9 10-29 31-7 7-7 8-14 15-2 2-21 2-188 13-53 4-7-1-2-2-1-63v-373l3-5 1-1 296-39zm-80 59-3 3-4 13-6 9-10 6-11 4-2 3v5l3 3 14 5 9 8 5 10 4 11 7 1 3-3 4-13 6-8 8-6 10-4 5-3 1-5-2-4-15-6-9-7-5-9-3-11-2-2z" fill="#4A3EA3"/>
+        </G>
+        <G transform="translate(690,270)">
+            <Path d="m0 0h8l3 4v369l-24 26-9 10-29 31-7 7-7 8-14 15-2 2-21 2-188 13-53 4-7-1-2-2-1-63v-373l3-5 1-1 296-39zm-3 13-104 14-143 19-70 9-20 3v420l20-1 118-9 59-4 52-3 1-8 2-76 3-4 42-5 42-4v-350z" fill="#2E2979"/>
+        </G>
+        <G transform="translate(672,647)">
+            <Path d="m0 0h8l-6 7-7 7-7 8-11 12-16 17-12 13-8 8-1-3 2-62 50-6z" fill="#8781C2"/>
+        </G>
+        <G transform="translate(613,353)">
+            <Path d="m0 0 4 4 7 8 5 5-9 7-6 9-3-3-6-8-6-5 5-5 7-9z" fill="#4D41A4"/>
+        </G>
+    </Svg>
+  );
+}
