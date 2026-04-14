@@ -1,7 +1,3 @@
-/**
- * Study Store - Manages study session state with FSRS algorithm
- */
-
 import { create } from 'zustand';
 import { StudyService, FlashcardData } from '@/services/study';
 import { useAuthStore } from './authStore';
@@ -16,12 +12,12 @@ export interface FlashcardWithFSRS {
 export interface SessionStats {
   totalCards: number;
   reviewed: number;
-  correct: number;   // rating >= 3 (Good/Easy)
-  incorrect: number; // rating < 3 (Again/Hard)
-  easy: number;      // rating = 4
-  good: number;      // rating = 3
-  hard: number;      // rating = 2
-  again: number;     // rating = 1
+  correct: number;
+  incorrect: number;
+  easy: number;
+  good: number;
+  hard: number;
+  again: number;
   startTime: Date;
   endTime: Date | null;
 }
@@ -31,8 +27,8 @@ interface StudyState {
   currentIndex: number;
   isLoading: boolean;
   isSessionComplete: boolean;
-  isPracticeMode: boolean; // true when reviewing already-learned cards
-  isCollectionEmpty: boolean; // true when collection has no cards at all
+  isPracticeMode: boolean;
+  isCollectionEmpty: boolean;
   error: string | null;
   collectionTitle: string;
   sourceLang: string;
@@ -41,7 +37,6 @@ interface StudyState {
   lastCompletedStats: SessionStats | null;
   sessionId: string | null;
 
-  // Actions
   startSession: (collectionId: string) => Promise<void>;
   gradeCard: (rating: Rating) => Promise<void>;
   resetSession: () => void;
@@ -64,7 +59,6 @@ const initialStats: SessionStats = {
   endTime: null,
 };
 
-// Fisher-Yates shuffle algorithm
 const shuffleArray = <T>(array: T[]): T[] => {
   const newArray = [...array];
   for (let i = newArray.length - 1; i > 0; i--) {
@@ -89,9 +83,6 @@ export const useStudyStore = create<StudyState>((set, get) => ({
   lastCompletedStats: null,
   sessionId: null,
 
-  /**
-   * Reset the study session
-   */
   resetSession: () => {
     const { isSessionComplete, sessionStats } = get();
     const completedStats =
@@ -112,14 +103,8 @@ export const useStudyStore = create<StudyState>((set, get) => ({
     });
   },
 
-  /**
-   * Clear completed session stats
-   */
   clearCompletedStats: () => set({ lastCompletedStats: null }),
 
-  /**
-   * Start a new study session
-   */
   startSession: async (collectionId) => {
     const userId = useAuthStore.getState().user?.id;
     if (!userId) {
@@ -127,20 +112,13 @@ export const useStudyStore = create<StudyState>((set, get) => ({
       return;
     }
 
-    // Prevent restarting the same session
     const { sessionId, isLoading, isSessionComplete, queue } = get();
     if (sessionId === collectionId && !isSessionComplete && queue.length > 0 && !isLoading) {
-      console.log('Session already active for:', collectionId);
       return;
     }
 
-    // If already loading, don't start another request
-    if (isLoading) {
-      console.log('Session already loading, skipping...');
-      return;
-    }
+    if (isLoading) return;
 
-    // Set loading immediately to prevent concurrent calls
     set({ isLoading: true });
 
     try {
@@ -155,9 +133,8 @@ export const useStudyStore = create<StudyState>((set, get) => ({
         sessionId: collectionId,
       });
 
-      // Get cards for this session from Supabase
       let result;
-      
+
       if (collectionId === 'hard_mode') {
         result = await StudyService.getHardCards(userId);
       } else {
@@ -172,7 +149,7 @@ export const useStudyStore = create<StudyState>((set, get) => ({
       if (flashcards.length === 0) {
         set({
           isLoading: false,
-          isSessionComplete: true, // Keep true to stop loading, but UI will check isCollectionEmpty first
+          isSessionComplete: true,
           isPracticeMode: false,
           isCollectionEmpty: true,
           collectionTitle: collectionId === 'all' ? 'Wszystkie' : collectionId === 'hard_mode' ? 'Trudne Słówka' : '',
@@ -186,7 +163,6 @@ export const useStudyStore = create<StudyState>((set, get) => ({
         return;
       }
 
-      // Load FSRS state for all cards in a single batch query
       const flashcardIds = flashcards.map(f => f.id);
       const fsrsCardMap = await StudyService.getStudyLogsBatch(flashcardIds, userId);
 
@@ -195,10 +171,8 @@ export const useStudyStore = create<StudyState>((set, get) => ({
         fsrsCard: fsrsCardMap.get(flashcard.id) || { ...INITIAL_CARD },
       }));
 
-      // Shuffle the queue to ensure random order every time
       studyQueue = shuffleArray(studyQueue);
 
-      // Get collection title if specific collection
       let collectionTitle = '';
       if (collectionId === 'all') {
         collectionTitle = 'Wszystkie Talie';
@@ -227,7 +201,6 @@ export const useStudyStore = create<StudyState>((set, get) => ({
         },
       });
     } catch (e: any) {
-      console.error('Failed to start session:', e);
       set({
         isLoading: false,
         error: e.message || 'Nie udało się załadować sesji',
@@ -235,10 +208,7 @@ export const useStudyStore = create<StudyState>((set, get) => ({
     }
   },
 
-  /**
-   * Grade the current card with FSRS rating (1-4)
-   * In practice mode, ratings are NOT saved to preserve real statistics
-   */
+  // In practice mode, ratings are NOT saved to preserve real statistics
   gradeCard: async (rating: Rating) => {
     const { queue, currentIndex, sessionStats, isPracticeMode } = get();
     const current = queue[currentIndex];
@@ -248,7 +218,6 @@ export const useStudyStore = create<StudyState>((set, get) => ({
     const userId = useAuthStore.getState().user?.id;
     if (!userId) return;
 
-    // Update local session stats (for UI feedback)
     const newStats = { ...sessionStats };
     newStats.reviewed++;
 
@@ -262,7 +231,6 @@ export const useStudyStore = create<StudyState>((set, get) => ({
       else if (rating === 1) newStats.again++;
     }
 
-    // Check if session is complete
     const nextIndex = currentIndex + 1;
     const isComplete = nextIndex >= queue.length;
 
@@ -270,7 +238,6 @@ export const useStudyStore = create<StudyState>((set, get) => ({
       newStats.endTime = new Date();
     }
 
-    // Move to next card (optimistic)
     set({
       currentIndex: nextIndex,
       isSessionComplete: isComplete,
@@ -278,20 +245,15 @@ export const useStudyStore = create<StudyState>((set, get) => ({
       lastCompletedStats: isComplete ? newStats : get().lastCompletedStats,
     });
 
-    // Only save review to Supabase in NORMAL mode (not practice mode)
-    // This preserves real FSRS statistics and scheduling
     if (!isPracticeMode) {
       try {
         await StudyService.saveReview(current.flashcard.id, userId, rating);
       } catch (e) {
-        console.error('Failed to save review:', e);
+        // Will resync on next session
       }
     }
   },
 
-  /**
-   * Skip the current card without grading
-   */
   skipCard: () => {
     const { queue, currentIndex, sessionStats } = get();
     const nextIndex = currentIndex + 1;
@@ -307,9 +269,6 @@ export const useStudyStore = create<StudyState>((set, get) => ({
     }
   },
 
-  /**
-   * Get predicted intervals for all ratings for current card
-   */
   getIntervals: () => {
     const { queue, currentIndex } = get();
     const current = queue[currentIndex];
@@ -321,14 +280,10 @@ export const useStudyStore = create<StudyState>((set, get) => ({
     return fsrs.getIntervals(current.fsrsCard);
   },
 
-  /**
-   * Get current card being studied
-   */
   getCurrentCard: () => {
     const { queue, currentIndex } = get();
     return queue[currentIndex] || null;
   },
 }));
 
-// Export rating labels for UI
 export { RATING_LABELS };

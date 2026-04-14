@@ -167,7 +167,6 @@ export default function ProfileScreen() {
                     Alert.alert('Sukces', 'Avatar został odświeżony');
                   } catch (e) {
                     Alert.alert('Błąd', 'Nie udało się zmienić avatara');
-                    // Revert on error if needed, or just let checkAuth fix it eventually
                   }
                 }}
                 activeOpacity={0.7}
@@ -405,7 +404,6 @@ export default function ProfileScreen() {
   );
 }
 
-// Wrapper for Moti/Animated button
 const MotiLogout = ({ onPress, children, style, theme }: any) => (
   <TouchableOpacity onPress={onPress} style={style} activeOpacity={0.8}>
     {children}

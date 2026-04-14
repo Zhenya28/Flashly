@@ -41,15 +41,11 @@ export default function RootLayout() {
     hydrateTheme();
     checkAuth();
 
-    // Initialize notifications (wrapped in try-catch for Expo Go compatibility)
     const initNotifications = async () => {
       try {
         const { NotificationService } = await import("@/services/notifications");
         const { ProfileService } = await import("@/services/profile");
-        // No native push token registration needed for local notifications
         await NotificationService.registerForPushNotificationsAsync();
-
-        // Schedule based on saved settings (default 09:00)
         const settings = await ProfileService.getUserSettings();
         if (settings.notificationTime) {
           const [hours, minutes] = settings.notificationTime.split(':').map(Number);
@@ -71,10 +67,8 @@ export default function RootLayout() {
     const inAuthGroup = segments[0] === "(auth)";
 
     if (isAuthenticated && inAuthGroup) {
-      // Redirect to home if user is signed in
       router.replace("/(tabs)");
     } else if (!isAuthenticated && !inAuthGroup) {
-      // Redirect to login if user is not signed in
       router.replace("/(auth)/login");
     }
   }, [isAuthenticated, isAuthLoading, segments, fontsLoaded]);
@@ -95,7 +89,6 @@ export default function RootLayout() {
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           <Stack.Screen name="index" options={{ headerShown: false }} />
 
-          {/* Collection & Card screens - Explicit config for Modals */}
           <Stack.Screen name="collections/create" options={{ presentation: 'modal', headerShown: false }} />
           <Stack.Screen name="collections/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="cards/create" options={{ presentation: 'modal', headerShown: false }} />

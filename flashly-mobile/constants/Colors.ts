@@ -1,24 +1,14 @@
-/**
- * Flashly Design System v4.0 - "Quizlet-Inspired"
- *
- * Design Philosophy:
- * - Soft gradient backgrounds like Quizlet
- * - Ultramarine primary color (#4255FF)
- * - Clean, modern typography
- * - Light mode first, dark mode ready
- * - WCAG AA compliant contrast ratios
- */
+// Flashly Design System v4.0
 
 export const Colors = {
   light: {
-    // === GRADIENT BACKGROUNDS (Quizlet-style) ===
-    background: '#F6F7FB',           // Light grayish-blue
-    backgroundAlt: '#EDEEF6',        // Slightly deeper lavender
-    backgroundGradientStart: '#E0E4F8',  // More visible lavender
+    // === GRADIENT BACKGROUNDS ===
+    background: '#F6F7FB',
+    backgroundAlt: '#EDEEF6',
+    backgroundGradientStart: '#E0E4F8',
     backgroundGradientMid: '#EEF0FA',
     backgroundGradientEnd: '#F8F9FF',
 
-    // Card surfaces
     card: '#FFFFFF',
     cardAlt: '#FAFBFF',
     cardElevated: '#FFFFFF',
@@ -33,7 +23,7 @@ export const Colors = {
     foreground: '#1A1A2E',
     mutedForeground: '#6B6B8A',
 
-    // === PRIMARY (Warm Indigo-Blue) ===
+    // === PRIMARY ===
     primary: '#5B6CF0',
     primaryDark: '#4A5AD8',
     primaryLight: '#7B8AF5',

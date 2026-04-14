@@ -25,11 +25,7 @@ const PREMIUM_GRADIENTS: Record<string, readonly [string, string]> = {
 export const CategoryCard = ({ category, onPress }: CategoryCardProps) => {
   const { colors: Theme, isDark, shadows } = useTheme();
   const styles = getStyles(Theme, shadows);
-  // Dynamic Icon
   const IconComponent = (LucideIcons[category.icon as keyof typeof LucideIcons] || LucideIcons.HelpCircle) as LucideIcons.LucideIcon;
-
-  // Select gradient based on slug or default
-  // We use the slug to determine color, falling back to default if not found
   const gradientColors = PREMIUM_GRADIENTS[category.slug] || PREMIUM_GRADIENTS.default;
 
   return (

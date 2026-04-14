@@ -64,7 +64,6 @@ export default function StudyScreen() {
     targetLang,
   } = useStudyStore();
 
-  // Prevent multiple session starts
   const sessionInitiatedRef = useRef<string | null>(null);
   const hasFlippedRef = useRef(false);
 
@@ -73,7 +72,6 @@ export default function StudyScreen() {
   const buttonsOpacity = useSharedValue(0);
   const progressWidth = useSharedValue(0);
 
-  // Auto TTS state
   const [autoTTS, setAutoTTS] = useState(false);
   const ttsInitRef = useRef(false);
   const prevCardIdRef = useRef<string | null>(null);
@@ -92,7 +90,6 @@ export default function StudyScreen() {
     }
   }, [id]);
 
-  // Load TTS preference from storage
   useEffect(() => {
     AsyncStorage.getItem('@flashly_auto_tts').then((val) => {
       if (val === 'true') setAutoTTS(true);
@@ -100,7 +97,6 @@ export default function StudyScreen() {
     });
   }, []);
 
-  // Auto-speak front when new card appears
   useEffect(() => {
     if (!autoTTS || !currentCard) return;
     const cardId = currentCard.flashcard.id;
@@ -115,16 +111,13 @@ export default function StudyScreen() {
     useCallback(() => {
       const checkAndRedirect = async () => {
         try {
-          // READ STATE DIRECTLY to avoid dependency loop with isCollectionEmpty toggling
           const currentEmpty = useStudyStore.getState().isCollectionEmpty;
 
           if (id && currentEmpty) {
             await startSession(id);
 
-            // Check if we now have cards
             const { isCollectionEmpty: stillEmpty, queue } = useStudyStore.getState();
             if (!stillEmpty && queue.length > 0) {
-              // User added cards! Redirect to Collection Details to start fresh
               router.replace(`/collections/${id}`);
             }
           }
@@ -147,7 +140,6 @@ export default function StudyScreen() {
       flipProgress.value = withTiming(1, { duration: 400, easing: Easing.inOut(Easing.ease) });
       buttonsOpacity.value = withDelay(200, withTiming(1, { duration: 300 }));
 
-      // Auto TTS: speak back (answer) in target language
       if (autoTTS && currentCard) {
         setTimeout(() => {
           GoogleTTSService.speak(currentCard.flashcard.back, targetLang).catch(() => {});
@@ -157,7 +149,6 @@ export default function StudyScreen() {
   }, [autoTTS, currentCard, targetLang]);
 
   const handleGrade = useCallback((rating: Rating) => {
-    // Haptic feedback based on rating
     if (rating === 1) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } else if (rating === 2) {
@@ -168,14 +159,12 @@ export default function StudyScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
 
-    // Run animations on UI thread
     cardScale.value = withSequence(
       withTiming(0.95, { duration: 100 }),
       withTiming(1, { duration: 100 })
     );
     buttonsOpacity.value = withTiming(0, { duration: 150 });
     flipProgress.value = withTiming(0, { duration: 300 });
-    // Grade card on JS thread
     gradeCard(rating);
   }, [gradeCard]);
 
@@ -227,7 +216,6 @@ export default function StudyScreen() {
     };
   });
 
-  // Loading State
   if (isLoading) {
     return (
       <>
@@ -241,7 +229,6 @@ export default function StudyScreen() {
     );
   }
 
-  // Error State
   if (error) {
     return (
       <GradientBackground variant="subtle">
@@ -274,7 +261,6 @@ export default function StudyScreen() {
 
 
 
-  // Empty Collection State
   if (isCollectionEmpty) {
     return (
       <GradientBackground variant="subtle">
@@ -310,14 +296,12 @@ export default function StudyScreen() {
               <Animated.View entering={FadeInDown.delay(400)} style={styles.completeButton}>
                  <TouchableOpacity 
                     onPress={() => {
-                        // Navigate to create card page
                         if (id && id !== 'all' && id !== 'hard_mode') {
                             router.push({
                                 pathname: '/cards/create',
                                 params: { collectionId: id }
                             });
                         } else {
-                            // If somehow here with 'all' or 'hard_mode', shouldn't happen usually if valid
                             router.back();
                         }
                     }} 
@@ -329,8 +313,7 @@ export default function StudyScreen() {
                    </Typography>
                  </TouchableOpacity>
 
-                 {/* AI Generation Button */}
-                 <TouchableOpacity 
+                 <TouchableOpacity
                     onPress={() => {
                         if (id && id !== 'all' && id !== 'hard_mode') {
                             router.push({
@@ -355,7 +338,6 @@ export default function StudyScreen() {
     );
   }
 
-  // Session Complete
   if (isSessionComplete) {
     const accuracy = sessionStats.reviewed > 0
       ? Math.round((sessionStats.correct / sessionStats.reviewed) * 100)
@@ -473,7 +455,6 @@ export default function StudyScreen() {
 
   if (!currentCard) return null;
 
-  // Active Study
   return (
     <GradientBackground variant="subtle">
       <StatusBar style={isDark ? 'light' : 'dark'} />
@@ -793,17 +774,16 @@ const getStyles = (Theme: any) => StyleSheet.create({
   completeButton: {
     width: '100%',
     marginTop: Spacing.xl,
-    alignItems: 'center', // Center buttons instead of stretch
+    alignItems: 'center',
   },
   returnButton: {
     backgroundColor: Theme.primary,
     paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg, // Match collections empty button
+    paddingHorizontal: Spacing.lg,
     borderRadius: Radius.lg,
     alignItems: 'center',
     flexDirection: 'row',
     gap: 8,
-    // Shadows like in collections
     shadowColor: Theme.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,

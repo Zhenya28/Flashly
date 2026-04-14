@@ -1,7 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
-// Configure behavior (show alert even if app is foreground)
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldPlaySound: true,
@@ -10,9 +9,6 @@ Notifications.setNotificationHandler({
     shouldShowList: true,
   }),
 });
-
-// Notification Service Mock
-// Disabled because Personal Development Teams do not support Push Notifications capability.
 
 export const NotificationService = {
   async registerForPushNotificationsAsync() {
@@ -25,7 +21,6 @@ export const NotificationService = {
       });
     }
 
-    // Just check permissions, no device check or token needed for local-only
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
 
@@ -35,16 +30,13 @@ export const NotificationService = {
     }
 
     if (finalStatus !== 'granted') {
-      console.log('Notification permissions not granted');
       return null;
     }
-    
-    // Return something truthy to indicate success, or null if failed
+
     return "granted";
   },
 
   async scheduleDailyReminder(hour: number = 18, minute: number = 0) {
-    // Cancel existing to avoid duplicates
     await Notifications.cancelAllScheduledNotificationsAsync();
 
     await Notifications.scheduleNotificationAsync({

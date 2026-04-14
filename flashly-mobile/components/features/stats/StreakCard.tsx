@@ -31,7 +31,6 @@ export function StreakCard({ streak, bestStreak = 0, todayCompleted = false }: S
   return (
     <Animated.View entering={FadeInDown.delay(50).duration(500)}>
       {isActive ? (
-        // Active state - orange-pink gradient with animated fire
         <LinearGradient
           colors={[Theme.streakGradientStart, Theme.streakGradientEnd]}
           start={{ x: 0, y: 0 }}

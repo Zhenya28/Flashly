@@ -21,7 +21,7 @@ export const useThemeStore = create<ThemeState>((set) => ({
     try {
       await AsyncStorage.setItem(THEME_STORAGE_KEY, mode);
     } catch (e) {
-      console.warn('Failed to persist theme mode:', e);
+      // Ignore storage write errors
     }
   },
 
@@ -34,7 +34,6 @@ export const useThemeStore = create<ThemeState>((set) => ({
         set({ isHydrated: true });
       }
     } catch (e) {
-      console.warn('Failed to hydrate theme:', e);
       set({ isHydrated: true });
     }
   },

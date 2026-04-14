@@ -1,12 +1,7 @@
-/**
- * Profile Store - Uses ProfileService (Supabase) for profile statistics
- */
-
 import { create } from 'zustand';
 import { ProfileService, ProfileStats, TimeFilter, UserSettings } from '@/services/profile';
 import { NotificationService } from '@/services/notifications';
 
-// Cache TTL: 10 seconds to prevent excessive refetching on tab switches
 const PROFILE_CACHE_TTL_MS = 10000;
 
 interface ProfileState {
@@ -18,7 +13,6 @@ interface ProfileState {
   error: string | null;
   lastFetchedAt: number | null;
 
-  // Actions
   fetchStats: (forceRefresh?: boolean) => Promise<void>;
   fetchSettings: () => Promise<void>;
   setTimeFilter: (filter: TimeFilter) => void;
@@ -44,15 +38,11 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
   fetchStats: async (forceRefresh = false) => {
     const { timeFilter, isLoading, lastFetchedAt, stats } = get();
 
-    // Prevent concurrent fetches
     if (isLoading) return;
 
-    // Use cache if data is fresh (unless force refresh)
     if (!forceRefresh && lastFetchedAt && stats) {
       const age = Date.now() - lastFetchedAt;
-      if (age < PROFILE_CACHE_TTL_MS) {
-        return; // Data is fresh, skip fetch
-      }
+      if (age < PROFILE_CACHE_TTL_MS) return;
     }
 
     set({ isLoading: true, error: null });
@@ -61,7 +51,6 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
       set({ stats: newStats, isLoading: false, lastFetchedAt: Date.now() });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
-      console.error('Failed to fetch profile stats:', error);
     }
   },
 
@@ -72,7 +61,6 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
       set({ settings, isSettingsLoading: false });
     } catch (error: any) {
       set({ isSettingsLoading: false });
-      console.error('Failed to fetch settings:', error);
     }
   },
 
@@ -84,7 +72,6 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
   updateSettings: async (newSettings: Partial<UserSettings>) => {
     const currentSettings = get().settings;
 
-    // Optimistic update
     if (currentSettings) {
       set({ settings: { ...currentSettings, ...newSettings } });
     }
@@ -92,11 +79,9 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
     try {
       await ProfileService.updateUserSettings(newSettings);
     } catch (error) {
-      // Revert on error
       if (currentSettings) {
         set({ settings: currentSettings });
       }
-      console.error('Failed to save settings:', error);
       throw error;
     }
   },
@@ -105,7 +90,6 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
     const settings = get().settings;
     const previousGoal = settings?.dailyGoal;
 
-    // Optimistic update
     if (settings) {
       set({ settings: { ...settings, dailyGoal: goal } });
     }
@@ -113,11 +97,9 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
     try {
       await ProfileService.updateUserSettings({ dailyGoal: goal });
     } catch (error) {
-      // Revert on error
       if (settings && previousGoal !== undefined) {
         set({ settings: { ...settings, dailyGoal: previousGoal } });
       }
-      console.error('Failed to save daily goal:', error);
     }
   },
 
@@ -125,15 +107,13 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
     const settings = get().settings;
     const previousTime = settings?.notificationTime;
 
-    // Optimistic update
     if (settings) {
       set({ settings: { ...settings, notificationTime: time } });
     }
 
     try {
       await ProfileService.updateUserSettings({ notificationTime: time });
-      
-      // Update actual schedule
+
       if (time) {
         const [hours, minutes] = time.split(':').map(Number);
         await NotificationService.scheduleDailyReminder(hours, minutes);
@@ -141,11 +121,9 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
         await NotificationService.cancelAll();
       }
     } catch (error) {
-      // Revert on error
       if (settings) {
         set({ settings: { ...settings, notificationTime: previousTime ?? null } });
       }
-      console.error('Failed to save notification time:', error);
     }
   },
 

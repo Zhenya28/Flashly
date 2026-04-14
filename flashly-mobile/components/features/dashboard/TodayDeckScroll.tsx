@@ -14,7 +14,6 @@ interface TodayDeckCardProps {
   isQuizMode?: boolean;
 }
 
-// Individual deck card for horizontal scroll
 function TodayDeckCard({ collection, stats, onPress, isQuizMode }: TodayDeckCardProps) {
   const { colors: Theme, isDark, shadows } = useTheme();
   const styles = getStyles(Theme, shadows);
@@ -23,7 +22,6 @@ function TodayDeckCard({ collection, stats, onPress, isQuizMode }: TodayDeckCard
   const sourceLang = getLanguageByCode(collection.source_lang || 'PL');
   const targetLang = getLanguageByCode(collection.target_lang || 'EN');
 
-  // Determine card status styling
   const getStatusConfig = () => {
     if (isQuizMode) {
       return {
@@ -66,10 +64,8 @@ function TodayDeckCard({ collection, stats, onPress, isQuizMode }: TodayDeckCard
       onPress={onPress}
       activeOpacity={0.8}
     >
-      {/* Status indicator dot */}
       <View style={[styles.statusDot, { backgroundColor: statusConfig.color }]} />
 
-      {/* Language flags */}
       <View style={styles.flagsRow}>
         {sourceLang && (
           <View style={styles.flagContainer}>
@@ -92,7 +88,6 @@ function TodayDeckCard({ collection, stats, onPress, isQuizMode }: TodayDeckCard
         )}
       </View>
 
-      {/* Title */}
       <Typography
         variant="bodySemi"
         color={Theme.text}
@@ -102,7 +97,6 @@ function TodayDeckCard({ collection, stats, onPress, isQuizMode }: TodayDeckCard
         {collection.title}
       </Typography>
 
-      {/* Status badge */}
       <View style={[styles.statusBadge, { backgroundColor: statusConfig.bgColor }]}>
         <StatusIcon size={12} color={statusConfig.color} />
         <Typography variant="caption" color={statusConfig.color} style={styles.statusText}>
@@ -121,10 +115,6 @@ interface TodayDeckScrollProps {
   isQuizMode?: boolean;
 }
 
-/**
- * "Na dziś" horizontal scrolling section
- * Shows decks that need attention (due cards or new cards)
- */
 export function TodayDeckScroll({
   collections,
   getStats,
@@ -134,22 +124,19 @@ export function TodayDeckScroll({
 }: TodayDeckScrollProps) {
   const { colors: Theme, isDark, shadows } = useTheme();
   const styles = getStyles(Theme, shadows);
-  // Filter and sort collections
   const todayDecks = collections
     .map(c => ({ collection: c, stats: getStats(c.id) }))
-    .filter(({ stats }) => stats.total > 0) // Only non-empty collections
+    .filter(({ stats }) => stats.total > 0)
     .sort((a, b) => {
       if (isQuizMode) {
-        // In quiz mode, sort by total cards
         return b.stats.total - a.stats.total;
       }
-      // In flashcards mode: due cards first, then new cards
       if (a.stats.due > 0 && b.stats.due === 0) return -1;
       if (a.stats.due === 0 && b.stats.due > 0) return 1;
       if (a.stats.due !== b.stats.due) return b.stats.due - a.stats.due;
       return b.stats.newCards - a.stats.newCards;
     })
-    .slice(0, 10); // Limit to 10 items
+    .slice(0, 10);
 
   if (todayDecks.length === 0) {
     return null;
@@ -160,7 +147,6 @@ export function TodayDeckScroll({
 
   return (
     <View style={styles.container}>
-      {/* Section header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={[styles.headerIconContainer, { backgroundColor: accentBgColor }]}>
@@ -189,13 +175,12 @@ export function TodayDeckScroll({
         )}
       </View>
 
-      {/* Horizontal scroll */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         decelerationRate="fast"
-        snapToInterval={148} // Card width + gap
+        snapToInterval={148}
       >
         {todayDecks.map(({ collection, stats }) => (
           <TodayDeckCard

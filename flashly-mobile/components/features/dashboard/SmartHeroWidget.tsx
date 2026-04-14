@@ -20,11 +20,9 @@ export const SmartHeroWidget = ({ collections, getStats, onPress, userName = 'UÅ
   const { colors: Theme, isDark, shadows } = useTheme();
   const styles = getStyles(Theme, shadows);
 
-  // Intelligence Logic: Find the best deck to study
   const recommendation = useMemo(() => {
     if (!collections || collections.length === 0) return null;
 
-    // 1. Priority: Max Due Cards
     let bestDueDeck = null;
     let maxDue = 0;
 
@@ -48,8 +46,6 @@ export const SmartHeroWidget = ({ collections, getStats, onPress, userName = 'UÅ
       };
     }
 
-    // 2. Fallback: Random/First deck for "Keep consistency"
-    // Ideally we would track "last studied", but for now taking the first populated one
     const randomDeck = collections[0];
     const stats = getStats(randomDeck.id);
     
@@ -66,7 +62,6 @@ export const SmartHeroWidget = ({ collections, getStats, onPress, userName = 'UÅ
   }, [collections, getStats, userName]);
 
   if (!recommendation) {
-    // Empty state handled by parent or different component usually, but widget can return null
     return null;
   }
 
@@ -79,7 +74,6 @@ export const SmartHeroWidget = ({ collections, getStats, onPress, userName = 'UÅ
       style={styles.container}
     >
       <GlassCard variant="elevated" padding="lg" style={styles.card}>
-        {/* Dynamic Background Gradient */}
         <LinearGradient
           colors={[color + '15', color + '05', 'transparent']}
           style={StyleSheet.absoluteFillObject}
@@ -104,7 +98,7 @@ export const SmartHeroWidget = ({ collections, getStats, onPress, userName = 'UÅ
         <View style={styles.content}>
           <View style={styles.deckInfo}>
             <Image 
-              source={require('@/assets/images/widget-flashcards.png')} // Reuse existing asset or placeholder
+              source={require('@/assets/images/widget-flashcards.png')}
               style={styles.deckImage}
               contentFit="cover"
             />

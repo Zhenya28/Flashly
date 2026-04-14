@@ -3,9 +3,8 @@ import { AuthService } from '@/services/auth';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 
-// Define User type based on Supabase
 export interface User {
-  id: string; // UUID from Supabase
+  id: string;
   email: string;
   name?: string;
   avatar_url?: string;
@@ -16,8 +15,7 @@ interface AuthState {
   session: any | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  
-  // Actions
+
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
@@ -30,13 +28,13 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   session: null,
   isAuthenticated: false,
-  isLoading: true, 
+  isLoading: true,
 
   login: async (email, password) => {
     try {
       set({ isLoading: true });
       const { user, session } = await AuthService.loginWithEmail(email, password);
-      
+
       const mappedUser: User | null = user ? {
         id: user.id,
         email: user.email || '',
@@ -47,7 +45,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       router.replace('/(tabs)');
     } catch (error) {
       set({ isLoading: false });
-      console.error('Login failed', error);
       throw error;
     }
   },
@@ -56,7 +53,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       set({ isLoading: true });
       const { user, session } = await AuthService.signInWithGoogle();
-      
+
       if (session) {
         const mappedUser: User | null = user ? {
           id: user.id,
@@ -65,17 +62,12 @@ export const useAuthStore = create<AuthState>((set) => ({
         } : null;
 
         set({ user: mappedUser, session, isAuthenticated: !!session, isLoading: false });
-        // Navigation is usually handled by layout listener, but we can force it here just in case specific logic is needed
-        // Assuming _layout.tsx has a listener that redirects if user is set. 
-        // But for consistency:
         router.replace('/(tabs)');
       } else {
-        // Cancelled or failed without error
         set({ isLoading: false });
       }
     } catch (error) {
       set({ isLoading: false });
-      console.error('Google Login failed', error);
       throw error;
     }
   },
@@ -84,7 +76,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       set({ isLoading: true });
       const { user, session } = await AuthService.registerWithEmail(email, password, name);
-      
+
       const mappedUser: User | null = user ? {
         id: user.id,
         email: user.email || '',
@@ -95,7 +87,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       router.replace('/(tabs)');
     } catch (error) {
       set({ isLoading: false });
-      console.error('Registration failed', error);
       throw error;
     }
   },
@@ -111,7 +102,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   checkAuth: async () => {
     try {
       const session = await AuthService.getSession();
-      
+
       if (session?.user) {
         const user = session.user;
         const mappedUser: User = {
@@ -119,12 +110,12 @@ export const useAuthStore = create<AuthState>((set) => ({
           email: user.email || '',
           name: user.user_metadata?.full_name,
         };
-        
-        set({ 
-          session, 
+
+        set({
+          session,
           user: mappedUser,
-          isAuthenticated: true, 
-          isLoading: false 
+          isAuthenticated: true,
+          isLoading: false
         });
       } else {
         set({ session: null, user: null, isAuthenticated: false, isLoading: false });
@@ -134,4 +125,3 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   }
 }));
-

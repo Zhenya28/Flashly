@@ -41,7 +41,6 @@ export default function DashboardScreen() {
   const styles = getStyles(Theme, shadows);
   const { stats, isLoading, error, refreshDashboard } = useDashboardStore();
 
-  // Local refreshing state to prevent UI glitches when navigating away
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(async () => {
@@ -69,9 +68,7 @@ export default function DashboardScreen() {
     return 'Dobry wieczór,';
   };
 
-  // Safe data accessors
   const userName = stats?.profile?.full_name?.split(' ')[0] || 'Użytkowniku';
-  // Use email as seed for consistency with Profile screen
   const { user } = useAuthStore();
   const avatarUrl = user?.avatar_url || stats?.profile?.avatar_url || ProfileService.generateDiceBearAvatar(user?.email || 'default');
   const streak = stats?.streak || 0;
@@ -89,7 +86,6 @@ export default function DashboardScreen() {
   const dailyProgress = Math.min((todayStudied / dailyGoal) * 100, 100);
   const isGoalComplete = todayStudied >= dailyGoal;
 
-  // Loading state
   if (isLoading && !stats) {
     return (
       <GradientBackground variant="subtle">
@@ -100,7 +96,6 @@ export default function DashboardScreen() {
     );
   }
 
-  // Error state
   if (error && !stats) {
     return (
       <GradientBackground variant="subtle">
@@ -164,7 +159,6 @@ export default function DashboardScreen() {
           {/* Hero Card - Cards to Study */}
           <Animated.View entering={FadeInDown.delay(100).duration(500)}>
             {cardsToStudy > 0 ? (
-              // Active state - cards to study
               <TouchableOpacity
                 activeOpacity={0.92}
                 onPress={() => router.push('/(tabs)/learning')}
@@ -269,7 +263,6 @@ export default function DashboardScreen() {
                 </LinearGradient>
               </TouchableOpacity>
             ) : collectionsCount === 0 ? (
-               // New User State
                <TouchableOpacity
                 activeOpacity={0.92}
                 onPress={() => router.push('/collections/create')}
@@ -317,7 +310,6 @@ export default function DashboardScreen() {
                 </LinearGradient>
               </TouchableOpacity>
             ) : (
-              // All Done state
               <TouchableOpacity
                 activeOpacity={0.92}
                 onPress={() => router.push('/collections/create')}
@@ -807,7 +799,6 @@ const getStyles = (Theme: any, shadows: any) => StyleSheet.create({
     marginLeft: Spacing.xs,
   },
 
-  // Widget Styles (copied from learning.tsx for consistency)
   modeWidget: {
     overflow: 'hidden',
     backgroundColor: Theme.card,

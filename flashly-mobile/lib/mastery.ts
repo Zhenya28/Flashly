@@ -1,7 +1,4 @@
-/**
- * Mastery calculation utilities for per-card statistics
- * Uses FSRS retrievability formula: R = e^((ln(0.9) * elapsed) / stability)
- */
+// Mastery calculation using FSRS retrievability: R = e^((ln(0.9) * elapsed) / stability)
 
 import { fsrs, FSRSCard, CardState } from './fsrs';
 
@@ -26,18 +23,12 @@ export interface CollectionMastery {
   totalCards: number;
 }
 
-/**
- * Calculate mastery percentage for a single card (0-100)
- */
 export function calculateCardMastery(card: FSRSCard, now: Date = new Date()): number {
   if (card.state === 'new' || !card.lastReview) return 0;
   const retrievability = fsrs.getRetrievability(card, now);
   return Math.round(retrievability * 100);
 }
 
-/**
- * Get full mastery info for a single card
- */
 export function getCardMasteryInfo(card: FSRSCard, now: Date = new Date()): CardMastery {
   const mastery = calculateCardMastery(card, now);
   const intervalMs = card.dueDate.getTime() - (card.lastReview?.getTime() || now.getTime());
@@ -58,9 +49,6 @@ export function getCardMasteryInfo(card: FSRSCard, now: Date = new Date()): Card
   };
 }
 
-/**
- * Calculate collection-level mastery summary
- */
 export function calculateCollectionMastery(
   cardMap: Map<string, FSRSCard>,
   now: Date = new Date()
@@ -95,9 +83,6 @@ export function calculateCollectionMastery(
   };
 }
 
-/**
- * Polish labels for card states
- */
 export function getStateLabel(state: CardState): string {
   switch (state) {
     case 'new': return 'Nowa';
@@ -107,9 +92,6 @@ export function getStateLabel(state: CardState): string {
   }
 }
 
-/**
- * Color based on mastery level
- */
 export function getMasteryColor(mastery: number, theme: any): string {
   if (mastery >= 90) return theme.success;
   if (mastery >= 60) return theme.primary;
@@ -118,9 +100,6 @@ export function getMasteryColor(mastery: number, theme: any): string {
   return theme.textMuted;
 }
 
-/**
- * Background color based on mastery level (softer variant)
- */
 export function getMasteryBgColor(mastery: number, theme: any): string {
   if (mastery >= 90) return theme.successLight;
   if (mastery >= 60) return theme.primaryMuted;
@@ -129,9 +108,6 @@ export function getMasteryBgColor(mastery: number, theme: any): string {
   return theme.backgroundAlt;
 }
 
-/**
- * Color for card state badges
- */
 export function getStateColor(state: CardState, theme: any): string {
   switch (state) {
     case 'new': return theme.warning;
@@ -141,9 +117,6 @@ export function getStateColor(state: CardState, theme: any): string {
   }
 }
 
-/**
- * Difficulty label (1-10 scale)
- */
 export function getDifficultyLabel(difficulty: number): string {
   if (difficulty <= 3) return 'Łatwa';
   if (difficulty <= 5) return 'Średnia';
@@ -151,9 +124,6 @@ export function getDifficultyLabel(difficulty: number): string {
   return 'Bardzo trudna';
 }
 
-/**
- * Format stability in days to human-readable Polish string
- */
 export function formatStability(days: number): string {
   if (days < 1) return '<1d';
   if (days < 7) return `${Math.round(days)}d`;
@@ -162,9 +132,6 @@ export function formatStability(days: number): string {
   return `${(days / 365).toFixed(1)}r.`;
 }
 
-/**
- * Format next review date — shows "Zaległa" if overdue
- */
 export function formatNextReview(date: Date | null, now: Date = new Date()): string {
   if (!date) return '—';
 
@@ -181,9 +148,6 @@ export function formatNextReview(date: Date | null, now: Date = new Date()): str
   return date.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' });
 }
 
-/**
- * Format last review date — past-oriented
- */
 export function formatLastReview(date: Date | null, now: Date = new Date()): string {
   if (!date) return 'Nigdy';
 

@@ -16,7 +16,6 @@ const CELL_SIZE = 12;
 const CELL_GAP = 3;
 const WEEKS_TO_SHOW = 12;
 
-// Serene Scholar theme intensity colors - resolved at runtime
 const getLevelColors = (Theme: any): Record<0 | 1 | 2 | 3 | 4, string> => ({
   0: Theme.progressBg,
   1: Theme.primaryMuted,

@@ -12,10 +12,6 @@ interface ContinueLearningCardProps {
   onPress: () => void;
 }
 
-/**
- * "Wróć do nauki" card - Quizlet-style continue learning hero card
- * Shows current collection progress with a prominent CTA button
- */
 export function ContinueLearningCard({
   collectionTitle,
   progressPercentage,
@@ -37,7 +33,6 @@ export function ContinueLearningCard({
       />
 
       <View style={styles.content}>
-        {/* Header with icon */}
         <View style={styles.header}>
           <View style={styles.iconBadge}>
             <TrendingUp size={16} color={Theme.heroGradientStart} />
@@ -47,12 +42,10 @@ export function ContinueLearningCard({
           </Typography>
         </View>
 
-        {/* Collection title */}
         <Typography variant="h2" color="#FFFFFF" numberOfLines={1} style={styles.title}>
           {collectionTitle}
         </Typography>
 
-        {/* Progress bar - green color */}
         <View style={styles.progressContainer}>
           <View style={styles.progressBar}>
             <View style={[styles.progressFill, { width: `${clampedProgress}%` }]} />
@@ -62,7 +55,6 @@ export function ContinueLearningCard({
           </Typography>
         </View>
 
-        {/* Stats and CTA row */}
         <View style={styles.footer}>
           <View style={styles.footerText}>
             <Typography variant="body" color="rgba(255,255,255,0.85)" numberOfLines={1}>
@@ -94,7 +86,6 @@ const getStyles = (Theme: any, shadows: any) => StyleSheet.create({
     paddingTop: Spacing.md,
   },
 
-  // Decorative circles for visual interest
   decorativeCircle1: {
     position: 'absolute',
     top: -40,

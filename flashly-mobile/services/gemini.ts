@@ -1,10 +1,41 @@
 const API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
 const MAX_RETRIES = 3;
 const RETRY_DELAYS = [1000, 2000, 4000];
+const TIMEOUT_MS = 15000;
 
-// Resolve 2-letter code to full language name for clear Gemini prompts
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number = TIMEOUT_MS): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+
+    if (error.name === 'AbortError') {
+      throw new Error('Request timeout - serwer Gemini nie odpowiada. Spróbuj ponownie.');
+    }
+
+    if (error.message === 'Network request failed') {
+      throw new Error(
+        'Brak połączenia z internetem. Sprawdź:\n' +
+        '1. Połączenie Wi-Fi/dane mobilne\n' +
+        '2. Restart aplikacji\n' +
+        '3. Restart emulatora/urządzenia'
+      );
+    }
+
+    throw error;
+  }
+}
+
 import { getLanguageByCode } from '@/components/ui/LanguagePicker';
 const resolveLanguageName = (code: string): string => {
   const lang = getLanguageByCode(code);
@@ -16,7 +47,7 @@ async function callGemini(prompt: string, retryCount = 0): Promise<string> {
     throw new Error("Brak klucza API Gemini. Dodaj EXPO_PUBLIC_GEMINI_API_KEY do pliku .env");
   }
 
-  const response = await fetch(GEMINI_URL, {
+  const response = await fetchWithTimeout(GEMINI_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -29,12 +60,9 @@ async function callGemini(prompt: string, retryCount = 0): Promise<string> {
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("Gemini API Error Body:", errorText);
 
-    // Retry on transient errors
     if ([429, 500, 503].includes(response.status) && retryCount < MAX_RETRIES) {
       const delay = RETRY_DELAYS[retryCount] || 4000;
-      console.log(`Retrying Gemini in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})`);
       await new Promise(resolve => setTimeout(resolve, delay));
       return callGemini(prompt, retryCount + 1);
     }
@@ -54,7 +82,6 @@ async function callGemini(prompt: string, retryCount = 0): Promise<string> {
 
   if (!text) throw new Error("No content generated");
 
-  // Clean up potential markdown code blocks
   return text.replace(/```json/g, '').replace(/```/g, '').trim();
 }
 
@@ -63,7 +90,7 @@ async function callGeminiWithImage(base64Image: string, mimeType: string, prompt
     throw new Error("Brak klucza API Gemini. Dodaj EXPO_PUBLIC_GEMINI_API_KEY do pliku .env");
   }
 
-  const response = await fetch(GEMINI_URL, {
+  const response = await fetchWithTimeout(GEMINI_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -77,15 +104,13 @@ async function callGeminiWithImage(base64Image: string, mimeType: string, prompt
         ],
       }],
     }),
-  });
+  }, 30000);
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("Gemini Vision API Error:", errorText);
 
     if ([429, 500, 503].includes(response.status) && retryCount < MAX_RETRIES) {
       const delay = RETRY_DELAYS[retryCount] || 4000;
-      console.log(`Retrying Gemini Vision in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})`);
       await new Promise(resolve => setTimeout(resolve, delay));
       return callGeminiWithImage(base64Image, mimeType, prompt, retryCount + 1);
     }
@@ -122,30 +147,20 @@ export const GeminiService = {
       Example: [{"front": "Kot", "back": "Cat"}]
     `;
 
+    const cleanText = await callGemini(prompt);
+
+    let cards;
     try {
-      const cleanText = await callGemini(prompt);
-
-      let cards;
-      try {
-        cards = JSON.parse(cleanText);
-      } catch (e) {
-        console.error("JSON Parse Error. Raw Text:", cleanText);
-        throw new Error("Failed to parse AI response as JSON");
-      }
-
-      if (!Array.isArray(cards)) throw new Error("Invalid response format (not an array)");
-
-      return cards as { front: string; back: string }[];
-    } catch (error) {
-      console.error("Gemini Generation Error:", error);
-      throw error;
+      cards = JSON.parse(cleanText);
+    } catch (e) {
+      throw new Error("Failed to parse AI response as JSON");
     }
+
+    if (!Array.isArray(cards)) throw new Error("Invalid response format (not an array)");
+
+    return cards as { front: string; back: string }[];
   },
 
-  /**
-   * Generate flashcards from an image (photo of notes, textbook, etc.)
-   * Uses Gemini Vision to analyze the image and create flashcards
-   */
   async generateCardsFromImage(
     base64Image: string,
     mimeType: string = 'image/jpeg',
@@ -176,43 +191,32 @@ Rules:
 Output ONLY a valid JSON array. No markdown, no explanation.
 Example: [{"front": "Cat", "back": "Kot"}]`;
 
+    const cleanText = await callGeminiWithImage(base64Image, mimeType, prompt);
+
+    let cards;
     try {
-      const cleanText = await callGeminiWithImage(base64Image, mimeType, prompt);
-
-      let cards;
-      try {
-        cards = JSON.parse(cleanText);
-      } catch (e) {
-        console.error("JSON Parse Error from image. Raw Text:", cleanText);
-        throw new Error("Nie udało się przetworzyć odpowiedzi AI");
-      }
-
-      if (!Array.isArray(cards) || cards.length === 0) {
-        throw new Error("AI nie wykryło treści na zdjęciu. Spróbuj wyraźniejsze zdjęcie.");
-      }
-
-      // Validate each card has front and back as non-empty strings
-      const validCards = cards.filter((c: any) =>
-        c.front && c.back &&
-        typeof c.front === 'string' && typeof c.back === 'string' &&
-        c.front.trim().length > 0 && c.back.trim().length > 0
-      ).map((c: any) => ({ front: c.front.trim(), back: c.back.trim() }));
-
-      if (validCards.length === 0) {
-        throw new Error("AI nie wykryło treści na zdjęciu. Spróbuj wyraźniejsze zdjęcie.");
-      }
-
-      return validCards;
-    } catch (error) {
-      console.error("Gemini Image Generation Error:", error);
-      throw error;
+      cards = JSON.parse(cleanText);
+    } catch (e) {
+      throw new Error("Nie udało się przetworzyć odpowiedzi AI");
     }
+
+    if (!Array.isArray(cards) || cards.length === 0) {
+      throw new Error("AI nie wykryło treści na zdjęciu. Spróbuj wyraźniejsze zdjęcie.");
+    }
+
+    const validCards = cards.filter((c: any) =>
+      c.front && c.back &&
+      typeof c.front === 'string' && typeof c.back === 'string' &&
+      c.front.trim().length > 0 && c.back.trim().length > 0
+    ).map((c: any) => ({ front: c.front.trim(), back: c.back.trim() }));
+
+    if (validCards.length === 0) {
+      throw new Error("AI nie wykryło treści na zdjęciu. Spróbuj wyraźniejsze zdjęcie.");
+    }
+
+    return validCards;
   },
 
-  /**
-   * Generate flashcards from a PDF document
-   * Uses Gemini to analyze the PDF content and create flashcards
-   */
   async generateCardsFromPDF(
     base64PDF: string,
     sourceLang: string = 'EN',
@@ -243,42 +247,32 @@ Rules:
 Output ONLY a valid JSON array. No markdown, no explanation.
 Example: [{"front": "Cat", "back": "Kot"}]`;
 
+    const cleanText = await callGeminiWithImage(base64PDF, 'application/pdf', prompt);
+
+    let cards;
     try {
-      const cleanText = await callGeminiWithImage(base64PDF, 'application/pdf', prompt);
-
-      let cards;
-      try {
-        cards = JSON.parse(cleanText);
-      } catch (e) {
-        console.error("JSON Parse Error from PDF. Raw Text:", cleanText);
-        throw new Error("Nie udało się przetworzyć odpowiedzi AI");
-      }
-
-      if (!Array.isArray(cards) || cards.length === 0) {
-        throw new Error("AI nie wykryło treści w PDF. Spróbuj inny plik.");
-      }
-
-      const validCards = cards.filter((c: any) =>
-        c.front && c.back &&
-        typeof c.front === 'string' && typeof c.back === 'string' &&
-        c.front.trim().length > 0 && c.back.trim().length > 0
-      ).map((c: any) => ({ front: c.front.trim(), back: c.back.trim() }));
-
-      if (validCards.length === 0) {
-        throw new Error("AI nie wykryło treści w PDF. Spróbuj inny plik.");
-      }
-
-      return validCards;
-    } catch (error) {
-      console.error("Gemini PDF Generation Error:", error);
-      throw error;
+      cards = JSON.parse(cleanText);
+    } catch (e) {
+      throw new Error("Nie udało się przetworzyć odpowiedzi AI");
     }
+
+    if (!Array.isArray(cards) || cards.length === 0) {
+      throw new Error("AI nie wykryło treści w PDF. Spróbuj inny plik.");
+    }
+
+    const validCards = cards.filter((c: any) =>
+      c.front && c.back &&
+      typeof c.front === 'string' && typeof c.back === 'string' &&
+      c.front.trim().length > 0 && c.back.trim().length > 0
+    ).map((c: any) => ({ front: c.front.trim(), back: c.back.trim() }));
+
+    if (validCards.length === 0) {
+      throw new Error("AI nie wykryło treści w PDF. Spróbuj inny plik.");
+    }
+
+    return validCards;
   },
 
-  /**
-   * Generate "tricky" distractors for quiz mode
-   * Returns words similar in spelling/sound to the correct answer
-   */
   async generateDistractors(
     correctAnswer: string,
     language: string,
@@ -302,17 +296,14 @@ Example: ["Cut", "Cot", "Kit"]`;
 
     try {
       const cleanText = await callGemini(prompt);
-
       const distractors = JSON.parse(cleanText);
 
       if (!Array.isArray(distractors)) return [];
 
-      // Filter out any that accidentally match the correct answer
       return distractors
         .filter((d: string) => d.toLowerCase() !== correctAnswer.toLowerCase())
         .slice(0, count);
     } catch (error) {
-      console.error("Gemini Distractor Error:", error);
       return [];
     }
   }

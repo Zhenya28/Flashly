@@ -44,7 +44,6 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 type CardCount = 10 | 25 | 50 | 100;
 const CARD_COUNT_OPTIONS: CardCount[] = [10, 25, 50, 100];
 
-// Subtle sparkle animation for AI section
 const FloatingSparkle = ({
   delay,
   size,
@@ -89,8 +88,6 @@ export default function GenerateCardsScreen() {
   const { collectionId } = useLocalSearchParams<{ collectionId: string }>();
   const { collections, addCardsBatch, fetchCollections } = useCollectionStore();
   
-  // Find collection to get languages
-  // If not found (e.g. reload), might need to fetch
   const collection = collections.find(c => c.id === collectionId);
 
   useEffect(() => {
@@ -99,7 +96,6 @@ export default function GenerateCardsScreen() {
     }
   }, [collectionId, collection]);
 
-  // AI State
   const [topic, setTopic] = useState('');
   const [cardCount, setCardCount] = useState<CardCount>(10);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -133,10 +129,8 @@ export default function GenerateCardsScreen() {
       setIsSubmitting(true);
       await addCardsBatch(collectionId, generatedCards);
       
-      // Force reset study session so it picks up new cards
       useStudyStore.getState().resetSession();
 
-      // Redirect back to the collection details to show the new cards
       if (router.canGoBack()) {
         router.back();
       } else {

@@ -10,14 +10,14 @@ export interface LastDeckStats {
   totalCards: number;
   studiedCards: number;
   dueCards: number;
-  progress: number; // 0-100
+  progress: number;
 }
 
 export interface DashboardStats {
   profile: { full_name: string | null; avatar_url: string | null } | null;
   dueCards: number;
   newCards: number;
-  cardsToStudy: number; // due + new
+  cardsToStudy: number;
   newWordsToday: number;
   dailyGoal: number;
   lastDeck: LastDeckStats | null;
@@ -34,42 +34,31 @@ export const DashboardService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    // 1. Get Profile (Name + Avatar)
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile } = await supabase
       .from('profiles')
       .select('full_name, avatar_url')
       .eq('id', user.id)
       .single();
 
-    if (profileError) console.error('Error fetching profile:', profileError);
-
-    // 2. Get Due Cards Count (SM-2: next_review_at <= now)
     const now = new Date().toISOString();
-    const { count: dueCardsCount, error: dueError } = await supabase
+    const { count: dueCardsCount } = await supabase
       .from('study_logs')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .lte('next_review_at', now);
 
-    if (dueError) console.error('Error fetching due cards:', dueError);
-
-    // 2b. Get studied cards count (to calculate new cards)
     const { count: studiedCardsCount } = await supabase
       .from('study_logs')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id);
 
-    // 3. Get New Words Added Today
     const todayStart = startOfDay(new Date()).toISOString();
-    const { count: newWordsCount, error: newWordsError } = await supabase
+    const { count: newWordsCount } = await supabase
       .from('flashcards')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .gte('created_at', todayStart);
 
-    if (newWordsError) console.error('Error fetching new words:', newWordsError);
-
-    // 4. Get Daily Goal from AsyncStorage
     let dailyGoal = 10;
     try {
       const stored = await AsyncStorage.getItem(SETTINGS_KEY);
@@ -78,10 +67,10 @@ export const DashboardService = {
         dailyGoal = parsed.dailyGoal || 10;
       }
     } catch (e) {
-      console.error('Error reading daily goal:', e);
+      // Use default
     }
 
-    // 5. Get Last Accessed Deck with Stats
+    // Last accessed deck
     let lastDeck: LastDeckStats | null = null;
     let lastDeckId: string | null = null;
 
@@ -102,7 +91,6 @@ export const DashboardService = {
       }
     }
 
-    // Fallback to most recent collection if no study activity
     if (!lastDeckId) {
       const { data: deck } = await supabase
         .from('collections')
@@ -114,7 +102,6 @@ export const DashboardService = {
       lastDeckId = deck?.id || null;
     }
 
-    // Get deck details and stats
     if (lastDeckId) {
       const { data: deck } = await supabase
         .from('collections')
@@ -123,14 +110,12 @@ export const DashboardService = {
         .single();
 
       if (deck) {
-        // Get total cards in deck
         const { count: deckTotalCards } = await supabase
           .from('flashcards')
           .select('*', { count: 'exact', head: true })
           .eq('collection_id', lastDeckId)
           .eq('user_id', user.id);
 
-        // Get flashcard IDs for this deck
         const { data: deckFlashcards } = await supabase
           .from('flashcards')
           .select('id')
@@ -139,7 +124,6 @@ export const DashboardService = {
 
         const deckFlashcardIds = deckFlashcards?.map(f => f.id) || [];
 
-        // Get studied cards count for this deck
         let deckStudiedCards = 0;
         let deckDueCards = 0;
 
@@ -175,39 +159,32 @@ export const DashboardService = {
       }
     }
 
-    // 6. Calculate Streak
     const streak = await this.calculateStreak(user.id);
 
-    // 7. Get Total Cards Count
     const { count: totalCards } = await supabase
       .from('flashcards')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id);
 
-    // 8. Get Mastered Cards (interval > 21)
     const { count: masteredCards } = await supabase
       .from('study_logs')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .gt('interval', 21);
 
-    // 9. Get Collections Count
     const { count: collectionsCount } = await supabase
       .from('collections')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id);
 
-    // 10. Get Today's Studied Cards
     const { count: todayStudied } = await supabase
       .from('study_logs')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .gte('last_studied_at', todayStart);
 
-    // 11. Get Weekly Progress (last 7 days of studied cards)
     const weeklyProgress = await this.getWeeklyProgress(user.id);
 
-    // Calculate new cards (cards without study_logs)
     const newCardsCount = Math.max(0, (totalCards || 0) - (studiedCardsCount || 0));
     const cardsToStudy = (dueCardsCount || 0) + newCardsCount;
 
@@ -229,7 +206,6 @@ export const DashboardService = {
   },
 
   async calculateStreak(userId: string): Promise<number> {
-    // Get all unique study dates ordered descending
     const { data: studyDates, error } = await supabase
       .from('study_logs')
       .select('last_studied_at')
@@ -241,7 +217,6 @@ export const DashboardService = {
       return 0;
     }
 
-    // Get unique dates
     const uniqueDates = new Set<string>();
     studyDates.forEach(log => {
       if (log.last_studied_at) {
@@ -250,19 +225,16 @@ export const DashboardService = {
     });
 
     const sortedDates = Array.from(uniqueDates).sort().reverse();
-
     if (sortedDates.length === 0) return 0;
 
     const today = format(new Date(), 'yyyy-MM-dd');
     const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
 
-    // Check if user studied today or yesterday (to keep streak)
     const mostRecentDate = sortedDates[0];
     if (mostRecentDate !== today && mostRecentDate !== yesterday) {
-      return 0; // Streak broken
+      return 0;
     }
 
-    // Count consecutive days
     let streak = 0;
     let expectedDate = mostRecentDate === today ? new Date() : subDays(new Date(), 1);
 
@@ -273,10 +245,8 @@ export const DashboardService = {
         streak++;
         expectedDate = subDays(expectedDate, 1);
       } else if (dateStr < expectedDateStr) {
-        // Gap found, streak ends
         break;
       }
-      // If dateStr > expectedDateStr, it's a duplicate or future date, skip
     }
 
     return streak;
@@ -284,17 +254,14 @@ export const DashboardService = {
 
   async getWeeklyProgress(userId: string): Promise<number[]> {
     const today = new Date();
-    const todayDayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ...
+    const todayDayOfWeek = today.getDay();
 
-    // Calculate Monday of current week
     const daysFromMonday = todayDayOfWeek === 0 ? 6 : todayDayOfWeek - 1;
     const monday = startOfDay(subDays(today, daysFromMonday));
 
-    // Sunday end (next day after Sunday)
     const sundayEnd = new Date(monday);
     sundayEnd.setDate(monday.getDate() + 7);
 
-    // Single query: fetch all study logs for this week
     const { data: logs, error } = await supabase
       .from('study_logs')
       .select('last_studied_at')
@@ -303,11 +270,9 @@ export const DashboardService = {
       .lt('last_studied_at', sundayEnd.toISOString());
 
     if (error) {
-      console.error('Error fetching weekly progress:', error);
       return [0, 0, 0, 0, 0, 0, 0];
     }
 
-    // Count per day in memory
     const progress: number[] = [0, 0, 0, 0, 0, 0, 0];
     (logs || []).forEach(log => {
       if (log.last_studied_at) {

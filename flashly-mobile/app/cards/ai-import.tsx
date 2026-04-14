@@ -161,7 +161,6 @@ export default function AIImportScreen() {
   const styles = getStyles(Theme, shadows);
   const { generateFlashcardsFromAI, generateFlashcardsFromPDF, addCollectionWithCards, addCardsBatch, fetchCards } = useCollectionStore();
 
-  // Route params — when coming from an existing collection
   const params = useLocalSearchParams<{ collectionId?: string; sourceLang?: string; targetLang?: string }>();
   const existingCollectionId = params.collectionId || null;
 
@@ -178,7 +177,6 @@ export default function AIImportScreen() {
   const [sourceLang, setSourceLang] = useState(params.sourceLang || 'EN');
   const [targetLang, setTargetLang] = useState(params.targetLang || 'PL');
 
-  // Cycle progress messages during generation
   useEffect(() => {
     if (step !== 'generating') return;
     const messages = sourceType === 'pdf' ? PDF_PROGRESS_MESSAGES : PROGRESS_MESSAGES;
@@ -307,13 +305,11 @@ export default function AIImportScreen() {
 
     try {
       if (existingCollectionId) {
-        // Add cards to existing collection
         await addCardsBatch(existingCollectionId, generatedCards);
         await fetchCards(existingCollectionId);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         router.back();
       } else {
-        // Create new collection with cards
         const description = sourceType === 'pdf'
           ? 'Wygenerowana przez AI z dokumentu PDF'
           : 'Wygenerowana przez AI ze zdjęcia';

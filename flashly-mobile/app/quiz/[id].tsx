@@ -52,8 +52,6 @@ import { useTheme } from '@/hooks/useTheme';
 
 const { width, height } = Dimensions.get('window');
 
-// Replaced inline loading components with imported LoadingScreen
-
 
 export default function QuizScreen() {
   const { colors: Theme, isDark, shadows } = useTheme();
@@ -108,21 +106,17 @@ export default function QuizScreen() {
     progressWidth.value = withTiming(progress, { duration: 400 });
   }, [currentIndex, questions.length]);
   
-  // Re-check for content on focus (in case user added cards)
   useFocusEffect(
     React.useCallback(() => {
       const checkAndRedirect = async () => {
         try {
-          // Check "is collection empty" from study store as general truth
           const studyStoreEmpty = useStudyStore.getState().isCollectionEmpty;
 
           if (id && studyStoreEmpty) {
-            // Restart quiz to see if we now have cards
             await startQuiz(id);
 
             const { questions } = useQuizStore.getState();
             if (questions.length > 0) {
-              // We have questions now — stay here with loaded questions
             }
           }
         } catch (e) {
@@ -147,7 +141,6 @@ export default function QuizScreen() {
   const handleConfirm = async () => {
     if (selectedAnswer === null) return;
     
-    // Animate button
     buttonScale.value = withSequence(
       withTiming(0.95, { duration: 50 }),
       withSpring(1)
@@ -155,7 +148,6 @@ export default function QuizScreen() {
     
     if (!isAnswerRevealed) {
       revealAnswer();
-      // Haptic feedback based on answer
       const question = questions[currentIndex];
       const wasCorrect = selectedAnswer === question.correctIndex;
       if (wasCorrect) {
@@ -223,7 +215,6 @@ export default function QuizScreen() {
               <Animated.View entering={FadeInDown.delay(400)} style={styles.completeButton}>
                  <TouchableOpacity 
                     onPress={() => {
-                        // Navigate to create card page
                         if (id && id !== 'all') {
                             router.push({
                                 pathname: '/cards/create',
@@ -241,8 +232,7 @@ export default function QuizScreen() {
                    </Typography>
                  </TouchableOpacity>
 
-                 {/* AI Generation Button */}
-                 <TouchableOpacity 
+                 <TouchableOpacity
                     onPress={() => {
                         if (id && id !== 'all') {
                             router.push({
@@ -267,7 +257,6 @@ export default function QuizScreen() {
     );
   }
 
-  // Generic Error State
   if (error) {
     return (
       <GradientBackground variant="subtle">
@@ -296,7 +285,6 @@ export default function QuizScreen() {
     );
   }
 
-  // Results screen
   if (isSessionComplete) {
     const percentage = stats.totalQuestions > 0 ? Math.round((stats.correctAnswers / stats.totalQuestions) * 100) : 0;
     const isGreat = percentage >= 80;
@@ -417,7 +405,6 @@ export default function QuizScreen() {
     );
   }
 
-  // Quiz question screen
   if (!currentQuestion) {
     return null;
   }
@@ -456,7 +443,6 @@ export default function QuizScreen() {
           </View>
         </View>
 
-        {/* Progress bar - bigger and more visible */}
         <View style={styles.progressContainer}>
           <View style={styles.progressBg}>
             <Animated.View style={[styles.progressFill, progressStyle]} />

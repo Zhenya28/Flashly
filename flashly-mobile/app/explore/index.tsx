@@ -34,7 +34,6 @@ export default function ExploreScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [initialLoaded, setInitialLoaded] = useState(false);
 
-  // Initial load
   useEffect(() => {
     const load = async () => {
       await Promise.all([fetchCategories(), fetchPublicCollections()]);
@@ -43,7 +42,6 @@ export default function ExploreScreen() {
     load();
   }, []);
 
-  // Debounced search (300ms)
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
     return () => clearTimeout(timer);
@@ -68,7 +66,6 @@ export default function ExploreScreen() {
     await cloneCollection(id);
   }, [cloneCollection]);
 
-  // Filter by search
   const filteredCollections = useMemo(() => {
     if (!debouncedSearch) return publicCollections;
     return publicCollections.filter(c =>
@@ -77,7 +74,6 @@ export default function ExploreScreen() {
     );
   }, [publicCollections, debouncedSearch]);
 
-  // Featured = top 1 by downloads (hide when filtering)
   const featuredCollection = useMemo(() => {
     if (debouncedSearch || selectedCategory) return null;
     if (publicCollections.length === 0) return null;
@@ -86,7 +82,6 @@ export default function ExploreScreen() {
     )[0];
   }, [publicCollections, debouncedSearch, selectedCategory]);
 
-  // List without featured
   const listData = useMemo(() => {
     if (!featuredCollection) return filteredCollections;
     return filteredCollections.filter(c => c.id !== featuredCollection.id);

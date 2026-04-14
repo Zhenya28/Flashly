@@ -1,9 +1,3 @@
-/**
- * Quiz Store - State management for quiz sessions
- * 
- * Manages quiz questions, progress, scoring, and timer
- */
-
 import { create } from 'zustand';
 import { QuizService, QuizQuestion } from '@/services/quiz';
 import { useAuthStore } from './authStore';
@@ -30,31 +24,21 @@ const initialStats: QuizStats = {
 };
 
 interface QuizState {
-  // Session state
   questions: QuizQuestion[];
   currentIndex: number;
   isLoading: boolean;
   isSessionComplete: boolean;
   isCollectionEmpty: boolean;
   error: string | null;
-  
-  // Quiz info
   collectionId: string | null;
   collectionTitle: string;
   targetLang: string;
-  
-  // Stats
   stats: QuizStats;
-  
-  // Timer
   startTime: number | null;
-  
-  // Answer feedback
   selectedAnswer: number | null;
   isAnswerRevealed: boolean;
   isCorrect: boolean | null;
-  
-  // Actions
+
   startQuiz: (collectionId: string, questionCount?: number) => Promise<void>;
   selectAnswer: (optionIndex: number) => void;
   revealAnswer: () => void;
@@ -65,7 +49,6 @@ interface QuizState {
 }
 
 export const useQuizStore = create<QuizState>((set, get) => ({
-  // Initial state
   questions: [],
   currentIndex: 0,
   isLoading: false,
@@ -102,9 +85,8 @@ export const useQuizStore = create<QuizState>((set, get) => ({
       const userId = useAuthStore.getState().user?.id;
       if (!userId) throw new Error('User not authenticated');
 
-      // Get collection info (if specific collection)
       let collectionTitle = 'Szybki Quiz';
-      let targetLang = 'EN'; // Default fallback
+      let targetLang = 'EN';
 
       if (collectionId !== 'all') {
         const { data: collection, error: collError } = await supabase
@@ -118,9 +100,8 @@ export const useQuizStore = create<QuizState>((set, get) => ({
         targetLang = collection.target_lang || 'EN';
       }
 
-      // Get flashcards
       const flashcards = await QuizService.getFlashcards(userId, collectionId);
-      
+
       if (flashcards.length === 0) {
         set({
           isLoading: false,
@@ -130,17 +111,10 @@ export const useQuizStore = create<QuizState>((set, get) => ({
         return;
       }
 
-      // Generate quiz questions
-      // If questionCount is provided, use it. Otherwise use all cards.
-      // For 'all' (Quick Quiz), default to 10 if not specified? 
-      // Actually, let's make Quick Quiz default to 10 in the calling component if needed, 
-      // or here if collectionId === 'all'.
-      
       let targetCount = flashcards.length;
       if (questionCount) {
         targetCount = Math.min(questionCount, flashcards.length);
       } else if (collectionId === 'all') {
-        // Default limit for global quick quiz if not specified
         targetCount = Math.min(10, flashcards.length);
       }
 
@@ -162,7 +136,6 @@ export const useQuizStore = create<QuizState>((set, get) => ({
         },
       });
     } catch (e: any) {
-      console.error('Failed to start quiz:', e);
       set({
         isLoading: false,
         error: e.message || 'Nie udało się uruchomić quizu',
@@ -171,9 +144,7 @@ export const useQuizStore = create<QuizState>((set, get) => ({
   },
 
   selectAnswer: (optionIndex: number) => {
-    const { isAnswerRevealed } = get();
-    if (isAnswerRevealed) return; // Already answered
-
+    if (get().isAnswerRevealed) return;
     set({ selectedAnswer: optionIndex });
   },
 
@@ -184,7 +155,6 @@ export const useQuizStore = create<QuizState>((set, get) => ({
     const currentQuestion = questions[currentIndex];
     const isCorrect = QuizService.checkAnswer(currentQuestion, selectedAnswer);
 
-    // Update streak
     const newStreak = isCorrect ? stats.currentStreak + 1 : 0;
     const newBestStreak = Math.max(stats.bestStreak, newStreak);
 
@@ -207,10 +177,8 @@ export const useQuizStore = create<QuizState>((set, get) => ({
     const isLastQuestion = currentIndex >= questions.length - 1;
 
     if (isLastQuestion) {
-      // Quiz complete
       const timeElapsed = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
-      
-      // Save result
+
       const userId = useAuthStore.getState().user?.id;
       if (userId && collectionId) {
         QuizService.saveQuizResult(
@@ -219,7 +187,7 @@ export const useQuizStore = create<QuizState>((set, get) => ({
           stats.correctAnswers,
           stats.totalQuestions,
           timeElapsed
-        ).catch(e => console.error('Failed to save quiz result:', e));
+        ).catch(() => {});
       }
 
       set({
@@ -227,7 +195,6 @@ export const useQuizStore = create<QuizState>((set, get) => ({
         stats: { ...stats, timeElapsed },
       });
     } else {
-      // Move to next question
       set({
         currentIndex: currentIndex + 1,
         selectedAnswer: null,
